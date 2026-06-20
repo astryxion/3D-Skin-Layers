@@ -1,0 +1,23 @@
+{
+  "required": true,
+  "minVersion": "0.7.11",
+  "verbose": true,
+  "package": "dev.tr7zw.skinlayers.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "refmap": "3dskinlayers.refmap.json",
+  "mixins": [
+  ],
+  "client": [
+    "PlayerMixin",
+    "RendererLivingEntityMixin",
+    "PlayerRendererMixin",
+    "SkullBlockEntityMixin",
+    "SkullBlockEntityRendererMixin",
+    "SkullModelMixin",
+    "CustomHeadLayerMixin",
+    "BlockEntityWithoutLevelRendererMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

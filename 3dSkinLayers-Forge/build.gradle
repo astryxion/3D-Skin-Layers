@@ -1,0 +1,185 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        maven { url "https://gregtech.overminddl1.com/" }
+        maven { url = 'https://maven.minecraftforge.net' }
+        maven { url = 'https://oss.sonatype.org/content/repositories/snapshots/' }
+        maven { url = 'https://jitpack.io' }
+    }
+    dependencies {
+        classpath 'com.github.GTNewHorizons:ForgeGradle:1.2.11'
+    }
+}
+
+plugins {
+    id "java"
+    id "com.github.johnrengelman.shadow" version "6.1.0"
+}
+
+apply plugin: 'forge'
+
+repositories {
+    maven { url "https://gregtech.overminddl1.com/" }
+    maven { url = 'https://maven.minecraftforge.net' }
+    mavenCentral()
+    maven { url 'https://jitpack.io/' }
+    maven { url 'https://repo.spongepowered.org/repository/maven-public/' }
+    maven { url "https://repo.codemc.io/repository/maven-public/" }
+}
+
+archivesBaseName = "3dSkinLayers-forge" + "-mc" + project.minecraft_version
+version = project.mod_version
+group = project.maven_group
+
+sourceCompatibility = targetCompatibility = 1.8
+compileJava.options.encoding = 'UTF-8'
+
+def mixingConfigRefMap = "3dskinlayers.refmap.json"
+def refMap = "${tasks.compileJava.temporaryDir}" + File.separator + mixingConfigRefMap
+def mixinSrg = "${tasks.reobf.temporaryDir}" + File.separator + "mixins.srg"
+
+minecraft {
+    version = "1.7.10-10.13.4.1614-1.7.10"
+    mappings = "stable_12"
+    runDir = "run"
+    replace('@NAME@', "3dskinlayers")
+    replace('@VER@', project.mod_version)
+    replace('@ID@', "skinlayers")
+}
+
+configurations {
+    include
+    compile.extendsFrom(include)
+}
+
+dependencies {
+    annotationProcessor("org.ow2.asm:asm-debug-all:5.0.3")
+    annotationProcessor("com.google.guava:guava:24.1.1-jre")
+    annotationProcessor("com.google.code.gson:gson:2.8.6")
+    annotationProcessor("org.spongepowered:mixin:0.8-SNAPSHOT")
+    include('org.spongepowered:mixin:0.7.11-SNAPSHOT') {
+        exclude module: "launchwrapper"
+        exclude module: "guava"
+        exclude module: "gson"
+        exclude module: "commons-io"
+        exclude module: "log4j-core"
+    }
+}
+
+shadowJar {
+    archiveClassifier.set('')
+    configurations = [project.configurations.include]
+    duplicatesStrategy DuplicatesStrategy.EXCLUDE
+    exclude 'pack.mcmeta'
+    exclude 'dummyThing'
+    exclude '**/module-info.class'
+    exclude '*.so'
+    exclude '*.dylib'
+    exclude '*.dll'
+    exclude '*.jnilib'
+    exclude 'ibxm/**'
+    exclude 'com/jcraft/**'
+    exclude 'org/lwjgl/**'
+    exclude 'net/java/**'
+
+    exclude 'META-INF/proguard/**'
+    exclude 'META-INF/maven/**'
+    exclude 'META-INF/versions/**'
+    exclude 'META-INF/com.android.tools/**'
+
+    exclude 'fabric.mod.json'
+
+    manifest.attributes(
+            "ForceLoadAsMod": true,
+            "ModSide": "CLIENT",
+            "MixinConfigs": '3dskinlayers.mixins.json',
+            "TweakClass": "org.spongepowered.asm.launch.MixinTweaker",
+            "TweakOrder": 0,
+            "FMLCorePluginContainsFMLMod": "true",
+            "Manifest-Version": 1.0
+    )
+}
+
+processResources {
+    inputs.property 'version', project.version
+    inputs.property 'mcversion', project.minecraft.version
+    inputs.property 'name', 'skinlayers'
+    inputs.property 'modid', 'skinlayers'
+    from(sourceSets.main.resources.srcDirs) {
+        include 'mcmod.info'
+        expand (
+                'version':project.version,
+                'mcversion':project.minecraft.version,
+                'name':'3dSkinLayers',
+                'modid': 'skinlayers'
+        )
+    }
+    from(sourceSets.main.resources.srcDirs) {
+        exclude 'mcmod.info'
+    }
+    from refMap
+    from "${project.rootDir}/LICENSE"
+}
+
+task moveResources {
+    doLast {
+        ant.move file: "${buildDir}/resources/main",
+                todir: "${buildDir}/classes/java"
+    }
+}
+
+moveResources.dependsOn processResources
+classes.dependsOn moveResources
+
+jar {
+    manifest.attributes(
+            "ForceLoadAsMod": true,
+            "ModSide": "CLIENT",
+            "MixinConfigs": '3dskinlayers.mixins.json',
+            "TweakClass": "org.spongepowered.asm.launch.MixinTweaker",
+            "TweakOrder": 0,
+            "FMLCorePluginContainsFMLMod": "true",
+            "Manifest-Version": 1.0
+    )
+
+    dependsOn shadowJar
+    enabled = false
+}
+
+task copyModToRun(type: Copy, dependsOn: shadowJar) {
+    from shadowJar.archivePath
+    into 'run/mods'
+}
+
+runClient.dependsOn copyModToRun
+
+reobf {
+    shadowJar {}
+    addExtraSrgFile mixinSrg
+}
+
+afterEvaluate {
+    tasks.compileJava {
+        options.compilerArgs += [
+                "-AreobfSrgFile=${tasks.reobf.srg}",
+                "-AoutSrgFile=${mixinSrg}",
+                "-AoutRefMapFile=${refMap}",
+                "-XDenableSunApiLintControl",
+                "-XDignore.symbol.file"
+        ]
+    }
+}
+
+runClient {
+    jvmArgs "-Dmixin.env.disableRefMap=true"
+    args "--tweakClass"
+    args "org.spongepowered.asm.launch.MixinTweaker"
+    args "--mixin"
+    args "3dskinlayers.mixins.json"
+}
+
+sourceSets {
+    main {
+        ext.refMap = mixingConfigRefMap
+    }
+}
