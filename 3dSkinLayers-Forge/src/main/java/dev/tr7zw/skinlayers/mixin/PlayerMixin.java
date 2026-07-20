@@ -24,6 +24,8 @@ public abstract class PlayerMixin extends EntityLivingBase implements PlayerSett
     private CustomizableModelPart headLayer;
     @Unique
 	private CustomizableModelPart[] skinLayer;
+    @Unique
+	private Boolean thinArms;
 	
 
 	@Override
@@ -34,6 +36,9 @@ public abstract class PlayerMixin extends EntityLivingBase implements PlayerSett
 	@Override
 	public void setupSkinLayers(CustomizableModelPart[] box) {
 		this.skinLayer = box;
+		if (box == null) {
+			this.thinArms = null;
+		}
 	}
 	
 	@Override
@@ -44,6 +49,16 @@ public abstract class PlayerMixin extends EntityLivingBase implements PlayerSett
 	@Override
 	public void setupHeadLayers(CustomizableModelPart box) {
 		this.headLayer = box;
+	}
+
+	@Override
+	public Boolean getThinArms() {
+		return thinArms;
+	}
+
+	@Override
+	public void setThinArms(Boolean thinArms) {
+		this.thinArms = thinArms;
 	}
 	
 }

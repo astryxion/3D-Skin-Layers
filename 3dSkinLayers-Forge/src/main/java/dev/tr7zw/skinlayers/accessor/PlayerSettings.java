@@ -12,4 +12,12 @@ public interface PlayerSettings {
 	
 	public void setupSkinLayers(CustomizableModelPart[] box);
 
+	/**
+	 * Arm model type used when the current body layers were built.
+	 * {@code null} means layers have not been built yet / were cleared.
+	 */
+	public Boolean getThinArms();
+
+	public void setThinArms(Boolean thinArms);
+
 }

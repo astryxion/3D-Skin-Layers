@@ -9,6 +9,7 @@ import dev.tr7zw.skinlayers.SkinUtil;
 import dev.tr7zw.skinlayers.FullSkinTextureManager;
 import dev.tr7zw.skinlayers.accessor.PlayerEntityModelAccessor;
 import dev.tr7zw.skinlayers.accessor.PlayerSettings;
+import dev.tr7zw.skinlayers.compat.superhero.SuperheroArmorCompat;
 import dev.tr7zw.skinlayers.opengl.GlStateManager;
 import dev.tr7zw.skinlayers.opengl.RenderState;
 import dev.tr7zw.skinlayers.render.CustomizableModelPart;
@@ -32,6 +33,9 @@ public class HeadLayerFeatureRenderer {
     public void doRenderLayer(AbstractClientPlayer player, float paramFloat1, float paramFloat2, float paramFloat3,
             float deltaTick, float paramFloat5, float paramFloat6, float paramFloat7) {
 		if (player.isInvisible() || !SkinLayersModBase.config.enableHat || !SkinUtil.hasCustomSkin(player)) {
+			return;
+		}
+		if (SuperheroArmorCompat.isWearingSuperheroSuit(player)) {
 			return;
 		}
 		if(SkinUtil.squareDistance(mc.thePlayer, player) > SkinLayersModBase.config.renderDistanceLOD*SkinLayersModBase.config.renderDistanceLOD)return;

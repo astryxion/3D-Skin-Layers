@@ -9,6 +9,7 @@ import dev.tr7zw.skinlayers.SkinLayersModBase;
 import dev.tr7zw.skinlayers.SkinUtil;
 import dev.tr7zw.skinlayers.accessor.PlayerEntityModelAccessor;
 import dev.tr7zw.skinlayers.accessor.PlayerSettings;
+import dev.tr7zw.skinlayers.compat.superhero.SuperheroArmorCompat;
 import dev.tr7zw.skinlayers.opengl.GlStateManager;
 import dev.tr7zw.skinlayers.opengl.RenderState;
 import dev.tr7zw.skinlayers.render.CustomizableModelPart;
@@ -41,12 +42,21 @@ public class BodyLayerFeatureRenderer {
         if (player.isInvisible() || !SkinUtil.hasCustomSkin(player)) {
             return;
         }
+        if (SuperheroArmorCompat.isWearingSuperheroSuit(player)) {
+            return;
+        }
         if(mc.theWorld == null) {
             return; // in a menu or something and the model gets rendered
         }
         if(SkinUtil.squareDistance(mc.thePlayer, player) > SkinLayersModBase.config.renderDistanceLOD*SkinLayersModBase.config.renderDistanceLOD)return;
         
         PlayerSettings settings = (PlayerSettings) player;
+        boolean thinArms = ((PlayerEntityModelAccessor) playerRenderer).hasThinArms();
+        Boolean cachedThinArms = settings.getThinArms();
+        if (cachedThinArms != null && cachedThinArms.booleanValue() != thinArms) {
+            settings.setupSkinLayers(null);
+            settings.setupHeadLayers(null);
+        }
         if (settings.getSkinLayers() != null && !hasBodyLayers(settings.getSkinLayers())) {
             settings.setupSkinLayers(null);
         }
@@ -129,6 +139,10 @@ public class BodyLayerFeatureRenderer {
         boolean redTint = abstractClientPlayer.hurtTime > 0 || abstractClientPlayer.deathTime > 0;
         boolean thinArms = ((PlayerEntityModelAccessor) playerRenderer).hasThinArms();
         for(Layer layer : bodyLayers) {
+            CustomizableModelPart part = layers[layer.layersId];
+            if (part == null || part.isEmpty()) {
+                continue;
+            }
             if(isWearing(abstractClientPlayer, layer.modelPart) && !layer.vanillaGetter.get().isHidden && layer.configGetter.get()) {
                 GlStateManager.pushMatrix();
                 if(abstractClientPlayer.isSneaking()) {
@@ -140,9 +154,9 @@ public class BodyLayerFeatureRenderer {
                     effectiveShape = thinArms ? Shape.ARMS_SLIM : Shape.ARMS;
                 }
                 if (effectiveShape == Shape.ARMS) {
-                    layers[layer.layersId].x = 0.998f * 16;
+                    part.x = 0.998f * 16;
                 } else if (effectiveShape == Shape.ARMS_SLIM) {
-                    layers[layer.layersId].x = 0.499f * 16;
+                    part.x = 0.499f * 16;
                 }
                 if (effectiveShape == Shape.BODY) {
                     widthScaling = SkinLayersModBase.config.bodyVoxelWidthSize;
@@ -150,13 +164,13 @@ public class BodyLayerFeatureRenderer {
                     widthScaling = SkinLayersModBase.config.baseVoxelSize;
                 }
                 if (layer.mirrored) {
-                    layers[layer.layersId].x *= -1;
+                    part.x *= -1;
                 }
                 GlStateManager.scale(0.0625, 0.0625, 0.0625);
                 GlStateManager.scale(widthScaling, heightScaling, pixelScaling);
-                layers[layer.layersId].y = effectiveShape.yOffsetMagicValue;
+                part.y = effectiveShape.yOffsetMagicValue;
                 
-                layers[layer.layersId].render(redTint);
+                part.render(redTint);
                 GlStateManager.popMatrix();
             }
         }

@@ -16,6 +16,7 @@ import com.mojang.authlib.minecraft.MinecraftProfileTexture.Type;
 
 import dev.tr7zw.skinlayers.accessor.PlayerSettings;
 import dev.tr7zw.skinlayers.accessor.SkullSettings;
+import dev.tr7zw.skinlayers.compat.skinport.SkinPortCompat;
 import dev.tr7zw.skinlayers.opengl.GlStateManager;
 import dev.tr7zw.skinlayers.opengl.NativeImage;
 import dev.tr7zw.skinlayers.render.CustomizableModelPart;
@@ -54,6 +55,10 @@ public class SkinUtil {
     }
 
     public static boolean hasThinArms(AbstractClientPlayer player) {
+        Boolean skinPortSlim = SkinPortCompat.isSlimSkin(player);
+        if (skinPortSlim != null) {
+            return skinPortSlim.booleanValue();
+        }
         try {
             Map<Type, MinecraftProfileTexture> map = Minecraft.getMinecraft().getSessionService()
                     .getTextures(player.getGameProfile(), false);
@@ -64,7 +69,24 @@ public class SkinUtil {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
+        // Same pixel check SkinPort uses when metadata is missing (transparent texel at 55,20).
+        BufferedImage image = readFullSkinImage(player);
+        if (image != null && image.getWidth() == image.getHeight() && image.getWidth() >= 64) {
+            int r = Math.max(image.getWidth() / 64, 1);
+            return ((image.getRGB(55 * r, 20 * r) & 0xFF000000) >>> 24) == 0;
+        }
         return false;
+    }
+
+    /**
+     * Prefer SkinPort's active model flag, then SkinPort/Mojang/pixel skin type detection.
+     */
+    public static boolean resolveThinArms(AbstractClientPlayer player, ModelBiped model) {
+        Boolean fromModel = SkinPortCompat.getModelSmallArms(model);
+        if (fromModel != null) {
+            return fromModel.booleanValue();
+        }
+        return hasThinArms(player);
     }
 
     public static double squareDistance(AbstractClientPlayer a, AbstractClientPlayer b) {
@@ -322,6 +344,7 @@ public class SkinUtil {
         if (!SkinUtil.hasCustomSkin(abstractClientPlayerEntity)) {
             settings.setupSkinLayers(null);
             settings.setupHeadLayers(null);
+            settings.setThinArms(null);
             return false;
         }
         settings.setupSkinLayers(null);
@@ -330,6 +353,7 @@ public class SkinUtil {
         if (skin == null) {
             settings.setupSkinLayers(null);
             settings.setupHeadLayers(null);
+            settings.setThinArms(null);
             return false;
         }
         boolean fullOverlay = skin.getHeight() >= 64;
@@ -352,6 +376,7 @@ public class SkinUtil {
         if (headLayer == null && !hasAnyLayer(layers)) {
             settings.setupSkinLayers(null);
             settings.setupHeadLayers(null);
+            settings.setThinArms(null);
             return false;
         }
         if (hasAnyLayer(layers)) {
@@ -362,6 +387,7 @@ public class SkinUtil {
         if (headLayer != null) {
             settings.setupHeadLayers(headLayer);
         }
+        settings.setThinArms(thinArms);
         return headLayer != null || hasAnyLayer(layers);
     }
 

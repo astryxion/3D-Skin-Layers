@@ -46,13 +46,19 @@ public abstract class PlayerRendererMixin implements PlayerEntityModelAccessor {
     
     @Inject(method = "doRender(Lnet/minecraft/client/entity/AbstractClientPlayer;DDDFF)V", at = @At("HEAD"))
     private void setModelProperties(AbstractClientPlayer abstractClientPlayer, double x, double y, double z, float yaw, float partialTicks, CallbackInfo info) {
-        smallArms = SkinUtil.hasThinArms(abstractClientPlayer);
         ModelBiped playerModel = renderPlayer().modelBipedMain;
+        smallArms = SkinUtil.resolveThinArms(abstractClientPlayer, playerModel);
+        PlayerSettings settings = (PlayerSettings) abstractClientPlayer;
+        Boolean cachedThinArms = settings.getThinArms();
+        if (cachedThinArms != null && cachedThinArms.booleanValue() != smallArms) {
+            // SkinPort may switch slim/default models; rebuild layers for the new arm width.
+            settings.setupSkinLayers(null);
+            settings.setupHeadLayers(null);
+        }
         playerModel.bipedHeadwear.isHidden = false;
         if (SkinUtil.squareDistance(Minecraft.getMinecraft().thePlayer, abstractClientPlayer) < SkinLayersModBase.config.renderDistanceLOD
                 * SkinLayersModBase.config.renderDistanceLOD) {
             if (SkinLayersModBase.config.enableHat) {
-                PlayerSettings settings = (PlayerSettings) abstractClientPlayer;
                 CustomizableModelPart headLayers = settings.getHeadLayers();
                 if (headLayers != null && headLayers.isEmpty()) {
                     settings.setupHeadLayers(null);
@@ -132,7 +138,15 @@ public abstract class PlayerRendererMixin implements PlayerEntityModelAccessor {
         ModelBiped modelplayer = renderPlayer().modelBipedMain;
         float pixelScaling = SkinLayersModBase.config.baseVoxelSize;
         PlayerSettings settings = (PlayerSettings) player;
-        if(settings.getSkinLayers() == null && !setupModel(player, settings)) {
+        smallArms = SkinUtil.resolveThinArms(player, modelplayer);
+        Boolean cachedThinArms = settings.getThinArms();
+        if (settings.getSkinLayers() == null || (cachedThinArms != null && cachedThinArms.booleanValue() != smallArms)) {
+            settings.setupSkinLayers(null);
+            if (!setupModel(player, settings)) {
+                return;
+            }
+        }
+        if (settings.getSkinLayers() == null || settings.getSkinLayers()[layerId] == null) {
             return;
         }
         GlStateManager.pushMatrix();
