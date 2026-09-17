@@ -81,9 +81,8 @@ public class HeadLayerFeatureRenderer {
 		RenderState.prepareTexturedModelDraw();
 		float voxelSize = SkinLayersModBase.config.headVoxelSize;
 		GlStateManager.pushMatrix();
-		if(abstractClientPlayer.isSneaking()) {
-            GlStateManager.translate(0.0F, 0.2F, 0.0F);
-        }
+		// Rendered inside renderModel (same space as vanilla headwear); do not apply
+		// the modern LayerRenderer sneak offset or the hat pivots through the face.
 		playerRenderer.modelBipedMain.bipedHead.postRender(0.0625F);
 		//this.getParentModel().head.translateAndRotate(matrixStack);
 	    GlStateManager.scale(0.0625, 0.0625, 0.0625);

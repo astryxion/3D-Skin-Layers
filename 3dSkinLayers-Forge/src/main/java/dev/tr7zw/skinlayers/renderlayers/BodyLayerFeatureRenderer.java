@@ -145,9 +145,7 @@ public class BodyLayerFeatureRenderer {
             }
             if(isWearing(abstractClientPlayer, layer.modelPart) && !layer.vanillaGetter.get().isHidden && layer.configGetter.get()) {
                 GlStateManager.pushMatrix();
-                if(abstractClientPlayer.isSneaking()) {
-                    GlStateManager.translate(0.0F, 0.2F, 0.0F);
-                }
+                // Same space as vanilla model parts; skip LayerRenderer sneak offset.
                 layer.vanillaGetter.get().postRender(0.0625F);
                 Shape effectiveShape = layer.shape;
                 if (layer.modelPart == PlayerModelPart.LEFT_SLEEVE || layer.modelPart == PlayerModelPart.RIGHT_SLEEVE) {
